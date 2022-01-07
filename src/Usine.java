@@ -1,22 +1,22 @@
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 
-class UsinePlante {
-    private String nomEspece;
-    private double besoinEnergie;
-    private double efficaciteEnergie;
-    private double resilience;
-    private double fertilite;
-    private int ageFertilite;
-    private double energieEnfant;
+public abstract class Usine {
+    protected String nomEspece;
+    protected double besoinEnergie;
+    protected double efficaciteEnergie;
+    protected double resilience;
+    protected double fertilite;
+    protected int ageFertilite;
+    protected double energieEnfant;
 
-    private Map<String ,Integer> initializingJudge;
+    protected Map<String ,Integer> initializingJudge;
 
-    public UsinePlante() {
+    public Usine(){
         this.clearJudge();
     }
 
-    private void clearJudge(){
+    protected void clearJudge(){
         this.initializingJudge = new HashMap<String,Integer>();
         this.initializingJudge.put("nomEspece",0);
         this.initializingJudge.put("besoinEnergie",0);
@@ -27,26 +27,7 @@ class UsinePlante {
         this.initializingJudge.put("energieEnfant",0);
     }
 
-    public Plante creerPlante() {
-        for(int v : this.initializingJudge.values()){
-            if(v == 0){
-                throw new IllegalArgumentException("Un ou plusieurs attributs n'ont pas été spécifiés.");
-            }
-        }
-        Plante objPlante = new Plante(
-            this.nomEspece,
-            this.energieEnfant,
-            0,
-            this.besoinEnergie,
-            this.efficaciteEnergie,
-            this.resilience,
-            this.fertilite,
-            this.ageFertilite,
-            this.energieEnfant);
-        return objPlante;
-    }
-
-    public void copierParent(Plante parent){
+    public void copierParent(Organisme parent){
         this.clearJudge();
         setNomEspece(parent.getNomEspece());
         setBesoinEnergie(parent.getBesoinEnergie());
@@ -56,6 +37,9 @@ class UsinePlante {
         setAgeFertilite(parent.getAgeFertilite());
         setEnergieEnfant(parent.getEnergieEnfant());
     }
+
+    // Obtenir le type d'organisme de cette usine
+    public abstract String getType();
 
     // Setters
     public void setNomEspece(String nomEspece) {
@@ -96,8 +80,8 @@ class UsinePlante {
 
     public void setFertilite(double fertilite) {
         if(fertilite >=0 && fertilite <=1){
-        this.fertilite = fertilite;
-        this.initializingJudge.put("fertilite",1);
+            this.fertilite = fertilite;
+            this.initializingJudge.put("fertilite",1);
         }else{
             throw new IllegalArgumentException("faut etre entre 0 et 1");
         }
@@ -120,4 +104,9 @@ class UsinePlante {
             throw new IllegalArgumentException("faut etre > 0");
         }
     }
+
+    public Map<String, Integer> getInitializingJudge(){
+        return this.initializingJudge;
+    }
+    
 }

@@ -40,6 +40,7 @@ public final class ConditionsInitiales {
         Integer energieSolaire = null;
         List<Plante> plantes = new ArrayList<>();
         List<Herbivore> herbivores = new ArrayList<>();
+        List<Carnivore> carnivores = new ArrayList<>();
 
         while (this.reader.hasNext()) {
             var event = this.nextEvent();
@@ -54,7 +55,7 @@ public final class ConditionsInitiales {
                         var quantityAttribute = startElement.getAttributeByName(new QName("quantite"));
                         var quantity = Integer.parseInt(quantityAttribute.getValue());
                         var usine = new UsinePlante();
-                        this.nextPlante(usine);
+                        this.nextOrganisme(usine);
                         for (int i = 0; i < quantity; i += 1) {
                             plantes.add(usine.creerPlante());
                         }
@@ -63,9 +64,18 @@ public final class ConditionsInitiales {
                         var quantityAttribute = startElement.getAttributeByName(new QName("quantite"));
                         var quantity = Integer.parseInt(quantityAttribute.getValue());
                         var usine = new UsineHerbivore();
-                        this.nextHerbivore(usine);
+                        this.nextOrganisme(usine);
                         for (int i = 0; i < quantity; i += 1) {
                             herbivores.add(usine.creerHerbivore());
+                        }
+                    }
+                    case "carnivore" -> {
+                        var quantityAttribute = startElement.getAttributeByName(new QName("quantite"));
+                        var quantity = Integer.parseInt(quantityAttribute.getValue());
+                        var usine = new UsineCarnivore();
+                        this.nextOrganisme(usine);
+                        for (int i = 0; i < quantity; i += 1) {
+                            carnivores.add(usine.creerCarnivore());
                         }
                     }
                 }
@@ -79,7 +89,39 @@ public final class ConditionsInitiales {
             throw new ConditionsInitialesInvalides("energieSolaire non spécifiée");
         }
 
-        return new Lac(energieSolaire, plantes, herbivores);
+        return new Lac(energieSolaire, plantes, herbivores, carnivores);
+    }
+
+    private void nextOrganisme(Usine usine) throws ConditionsInitialesInvalides {
+        while (true) {
+            var event = this.nextEventIgnoringWhitespace();
+            if (event.isStartElement()) {
+                var startElement = event.asStartElement();
+                var name = startElement.getName().getLocalPart();
+                switch (name) {
+                    case "nomEspece" -> usine.setNomEspece(this.nextString("nomEspece"));
+                    case "besoinEnergie" -> usine.setBesoinEnergie(this.nextDouble("besoinEnergie"));
+                    case "efficaciteEnergie" -> usine.setEfficaciteEnergie(this.nextDouble("efficaciteEnergie"));
+                    case "resilience" -> usine.setResilience(this.nextDouble("resilience"));
+                    case "fertilite" -> usine.setFertilite(this.nextDouble("fertilite"));
+                    case "ageFertilite" -> usine.setAgeFertilite(this.nextInt("ageFertilite"));
+                    case "energieEnfant" -> usine.setEnergieEnfant(this.nextDouble("energieEnfant"));
+                    case "debrouillardise" -> ((UsineAnimal)usine).setDebrouillardise(this.nextDouble("debrouillardise"));
+                    case "voraciteMin" -> ((UsineHerbivore)usine).setVoraciteMin(this.nextDouble("voraciteMin"));
+                    case "voraciteMax" -> ((UsineHerbivore)usine).setVoraciteMax(this.nextDouble("voraciteMax"));
+                    case "aliments" -> ((UsineAnimal)usine).addAliment(this.nextString("aliments"));
+                    case "tailleMaximum" -> ((UsineAnimal)usine).setTailleMaximum(this.nextDouble("tailleMaximum"));
+                    default -> throw new ConditionsInitialesInvalides(
+                        "attribut \"" + name + "\" invalide pour " + usine.getType());
+                }
+                this.skipEndTag();
+            } else if (event.isEndElement()) {
+                if (usine instanceof UsineAnimal && usine.getInitializingJudge().get("tailleMaximum")==0){
+                    ((UsineAnimal)usine).defautTailleMaximum();
+                }
+                return;
+            }
+        }
     }
 
     private void nextPlante(UsinePlante usine) throws ConditionsInitialesInvalides {
@@ -124,15 +166,50 @@ public final class ConditionsInitiales {
                     case "voraciteMin" -> usine.setVoraciteMin(this.nextDouble("voraciteMin"));
                     case "voraciteMax" -> usine.setVoraciteMax(this.nextDouble("voraciteMax"));
                     case "aliments" -> usine.addAliment(this.nextString("aliments"));
+                    case "tailleMaximum" -> usine.setTailleMaximum(this.nextDouble("tailleMaximum"));
                     default -> throw new ConditionsInitialesInvalides(
                         "attribut \"" + name + "\" invalide pour un herbivore");
                 }
                 this.skipEndTag();
             } else if (event.isEndElement()) {
+                if (usine.getInitializingJudge().get("tailleMaximum")==0){
+                    usine.defautTailleMaximum();
+                }
                 return;
             }
         }
     }
+
+    private void nextCarnivore(UsineCarnivore usine) throws ConditionsInitialesInvalides {
+        while (true) {
+            var event = this.nextEventIgnoringWhitespace();
+            if (event.isStartElement()) {
+                var startElement = event.asStartElement();
+                var name = startElement.getName().getLocalPart();
+                switch (name) {
+                    case "nomEspece" -> usine.setNomEspece(this.nextString("nomEspece"));
+                    case "besoinEnergie" -> usine.setBesoinEnergie(this.nextDouble("besoinEnergie"));
+                    case "efficaciteEnergie" -> usine.setEfficaciteEnergie(this.nextDouble("efficaciteEnergie"));
+                    case "resilience" -> usine.setResilience(this.nextDouble("resilience"));
+                    case "fertilite" -> usine.setFertilite(this.nextDouble("fertilite"));
+                    case "ageFertilite" -> usine.setAgeFertilite(this.nextInt("ageFertilite"));
+                    case "energieEnfant" -> usine.setEnergieEnfant(this.nextDouble("energieEnfant"));
+                    case "debrouillardise" -> usine.setDebrouillardise(this.nextDouble("debrouillardise"));
+                    case "aliments" -> usine.addAliment(this.nextString("aliments"));
+                    case "tailleMaximum" -> usine.setTailleMaximum(this.nextDouble("tailleMaximum"));
+                    default -> throw new ConditionsInitialesInvalides(
+                        "attribut \"" + name + "\" invalide pour un herbivore");
+                }
+                this.skipEndTag();
+            } else if (event.isEndElement()) {
+                if (usine.getInitializingJudge().get("tailleMaximum")==0){
+                    usine.defautTailleMaximum();
+                }
+                return;
+            }
+        }
+    }
+
 
     private String nextString(String context) throws ConditionsInitialesInvalides {
         var characters = this.nextCharacters(context);
